@@ -78,3 +78,4 @@ else
     log_message "ERROR: Failed to start service"
     exit 1
 fi
+# testing auto deply 2
