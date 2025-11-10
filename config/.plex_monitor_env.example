@@ -1,0 +1,17 @@
+# Plex Monitor Environment Configuration
+# 
+# SETUP INSTRUCTIONS:
+# 1. Copy: sudo -u plex cp config/.plex_monitor_env.example /Users/plex/.plex_monitor_env
+# 2. Edit: sudo -u plex nano /Users/plex/.plex_monitor_env
+# 3. Secure: sudo -u plex chmod 600 /Users/plex/.plex_monitor_env
+# 
+# NEVER commit the actual .plex_monitor_env file!
+
+# Your Plex Media Server token
+export PLEX_TOKEN="your_plex_token_here"
+
+# Your Airtable API token
+export AIRTABLE_TOKEN="your_airtable_token_here"
+
+# Your Airtable base ID
+export AIRTABLE_BASE="your_airtable_base_id_here"

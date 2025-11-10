@@ -1,0 +1,29 @@
+# Environment files with secrets - NEVER COMMIT
+.plex_monitor_env
+*.env
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+
+# JSON state files
+*_queue.json
+*_history.json
+speed_test_history.json
+restart_history.json
+reboot_history.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
