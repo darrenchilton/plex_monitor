@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set explicit PATH for LaunchDaemon environment
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 # Auto-deploy script for plex_monitor
 # Checks GitHub for updates and deploys them automatically
 
@@ -21,11 +24,11 @@ cd "$REPO_DIR" || {
 }
 
 # Fetch latest changes from GitHub
-git fetch origin main &>/dev/null
+/usr/bin/git fetch origin main &>/dev/null
 
 # Check if there are updates
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse origin/main)
+LOCAL=$(/usr/bin/git rev-parse HEAD)
+REMOTE=$(/usr/bin/git rev-parse origin/main)
 
 if [ "$LOCAL" = "$REMOTE" ]; then
     # No updates - exit silently (no log spam)
@@ -35,7 +38,7 @@ fi
 log_message "Updates detected! Local: ${LOCAL:0:7}, Remote: ${REMOTE:0:7}"
 
 # Pull the changes
-if ! git pull origin main &>/dev/null; then
+if ! /usr/bin/git pull origin main &>/dev/null; then
     log_message "ERROR: Git pull failed"
     exit 1
 fi
@@ -50,25 +53,25 @@ fi
 
 # Stop the monitor
 log_message "Stopping plex_monitor service..."
-if ! sudo launchctl unload "$PLIST_PATH" 2>/dev/null; then
+if ! /usr/bin/sudo /bin/launchctl unload "$PLIST_PATH" 2>/dev/null; then
     log_message "WARNING: Could not unload service (may not be running)"
 fi
 
 # Copy updated script
-if ! sudo cp "$SCRIPT_SOURCE" "$SCRIPT_DEST"; then
+if ! /bin/cp "$SCRIPT_SOURCE" "$SCRIPT_DEST"; then
     log_message "ERROR: Failed to copy script to $SCRIPT_DEST"
     exit 1
 fi
 
 # Set permissions
-sudo chown plex:staff "$SCRIPT_DEST"
-sudo chmod 755 "$SCRIPT_DEST"
+/usr/sbin/chown plex:staff "$SCRIPT_DEST"
+/bin/chmod 755 "$SCRIPT_DEST"
 
 log_message "Script deployed successfully"
 
 # Restart the monitor
 log_message "Starting plex_monitor service..."
-if sudo launchctl load "$PLIST_PATH"; then
+if /usr/bin/sudo /bin/launchctl load "$PLIST_PATH"; then
     log_message "Service restarted successfully"
     log_message "Deployment complete! Commit: ${REMOTE:0:7}"
 else
