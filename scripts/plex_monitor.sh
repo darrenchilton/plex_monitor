@@ -20,7 +20,7 @@ REBOOT_CYCLE_PAUSE=86400
 DAILY_RESET_HOUR=0        # Reset attempts at midnight
 
 # Speed Test Configuration
-SPEED_TEST_HOUR=2         # Run speed test at 2am
+SPEED_TEST_HOUR=2         # Run speed test at 2:05am or later (skips 2:00-2:04 to avoid 403 errors)
 SPEED_TEST_TIMEZONE='America/New_York'  # EST
 SPEED_TEST_LOG="/Users/$PLEX_USER/Library/Logs/network_speeds.log"
 SPEED_TEST_HISTORY_FILE="/Users/$PLEX_USER/Library/Logs/speed_test_history.json"
@@ -484,6 +484,7 @@ should_run_speed_test() {
     
     # Strip leading zeros to avoid octal interpretation (08, 09 cause errors)
     current_hour=$((10#$current_hour))
+    current_minute=$((10#$current_minute))
     
     # Additional check: look for today's entry in the speed log file
     # This is a more reliable check than the JSON history file
@@ -511,7 +512,15 @@ should_run_speed_test() {
     local has_failed_attempts=false
     
     if [[ "$current_hour" -eq "$SPEED_TEST_HOUR" ]]; then
-        is_test_hour=true
+        # During test hour, only run if minute >= 5 for first attempt (skips 2:00-2:04 problematic window)
+        # OR if we already have failed attempts (retries can happen at any minute)
+        if [[ "$last_test_date" == "$current_date" ]] && [[ "$attempts_today" -gt 0 ]]; then
+            # This is a retry attempt - allow any minute
+            is_test_hour=true
+        elif [[ "$current_minute" -ge 5 ]]; then
+            # First attempt - only after 2:05am to avoid 403 errors
+            is_test_hour=true
+        fi
     fi
     
     if [[ "$last_test_date" == "$current_date" ]] && [[ "$attempts_today" -gt 0 ]]; then
@@ -664,8 +673,16 @@ handle_speed_test() {
         return 0
     fi
     
+    local current_date=$(TZ="$SPEED_TEST_TIMEZONE" date '+%Y-%m-%d')
     local speed_info=$(get_speed_test_info)
+    local last_test_date=$(echo "$speed_info" | grep -o '"last_test_date": *"[^"]*"' | cut -d'"' -f4)
     local attempts_today=$(echo "$speed_info" | grep -o '"attempts_today": *[0-9]*' | grep -o '[0-9]*$')
+    
+    # Reset attempts_today if it's a new day (same logic as should_run_speed_test)
+    if [[ "$last_test_date" != "$current_date" ]]; then
+        attempts_today=0
+    fi
+    
     local attempt_num=$((attempts_today + 1))
     
     log_message "Speed test window active (Attempt $attempt_num of $MAX_SPEED_TEST_ATTEMPTS)"
