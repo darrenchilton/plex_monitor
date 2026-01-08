@@ -393,6 +393,79 @@ ping -c 3 8.8.8.8
 cat /Users/plex/Library/Logs/reboot_history.json
 ```
 
+## 🌐 Network Topology & Static IP Policy (Critical)
+
+### Overview
+This system runs on a macOS Mac mini connected via Ethernet to a **Verizon E3200 Wi-Fi Extender** (bridge mode), upstream of a **Verizon CR1000B router**.
+
+Due to extender behavior, DHCP is **not reliably delivered** to all Ethernet clients. This can result in:
+- fallback to `169.254.x.x` (link-local),
+- missing default route,
+- ARP failure,
+- complete loss of remote access (SSH, Plex, Home Assistant).
+
+This has been observed even when other devices on the same switch receive DHCP correctly.
+
+### Authoritative Policy (DO NOT DEVIATE)
+The Mac mini **must** use:
+- **Static IPv4 on the host**, and
+- **DHCP reservation (static lease) on the router**
+
+This dual approach is intentional and redundant.
+
+### Canonical Network Configuration
+
+**Mac mini (host-side):**
+- Interface: `en0`
+- IP: `192.168.1.153`
+- Netmask: `255.255.255.0`
+- Gateway: `192.168.1.1`
+- DNS: router-provided (or `192.168.1.1`)
+- Configuration: **Manual**
+
+**Router (CR1000B):**
+- DHCP Connection: `Plexs-Mac-mini`
+- MAC: `F0:18:98:ED:2B:CE`
+- IP: `192.168.1.153`
+- Type: **Static**
+- Lease: **Never**
+
+### Why This Matters
+Switching the host to DHCP *without* a reservation has repeatedly caused:
+- loss of IPv4 address,
+- disappearance of default route,
+- ARP resolution failure,
+- total remote lockout.
+
+Because this machine hosts:
+- Plex Media Server,
+- Home Assistant,
+- thermostat ingestion and automation,
+- monitoring and recovery services,
+
+**remote lockout is an unacceptable failure mode**.
+
+### Hard Rule: Remote Safety
+❌ Never toggle DHCP / manual networking remotely unless:
+- a router reservation already exists **and**
+- out-of-band access (local console / AnyDesk) is available.
+
+✅ Static host config + router reservation is the safe steady state.
+
+### Recovery Playbook (if network is lost)
+1. Restore any local or out-of-band access (console, AnyDesk, smart plug reboot).
+2. Re-establish static IP on `en0`.
+3. Confirm:
+   - `ipconfig getifaddr en0`
+   - `route -n get default`
+   - `ping 192.168.1.1`
+4. **Do not** attempt DHCP again unless testing locally.
+
+---
+
+**This policy is intentional and documented. Do not "simplify" it later.**
+
+
 ### Auto-Deployment Issues
 ```bash
 # Check if auto-deploy is running
