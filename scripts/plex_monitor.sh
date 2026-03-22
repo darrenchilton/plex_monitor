@@ -717,6 +717,7 @@ handle_speed_test() {
 # ============================================================================
 
 log_message "Starting Secure Plex Monitor Script with Network Speed Testing"
+log_to_airtable "System Startup" "Plex monitor started - system has booted or monitor was restarted"
 
 # Initialize systems
 init_logging
