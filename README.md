@@ -7,11 +7,12 @@ A robust monitoring solution for Plex Media Server on macOS that provides automa
 - **🔄 Continuous Monitoring** - Real-time Plex Media Server health checks every 5 minutes
 - **🧠 Smart Update Detection** - Automatically pauses monitoring during Plex updates
 - **🌐 Network Recovery** - Multi-stage network connectivity restoration (soft reset → DNS flush → hard reset)
-- **⚡ Daily Speed Testing** - Tracks network performance at 2am EST with intelligent retry logic
+- **⚡ Daily Speed Testing** - Tracks network performance at 2am EST with intelligent retry logic and pinned server (13098) for reliable upload measurements
 - **🔒 Security Focused** - Minimal permissions, passwordless sudo only for required operations
 - **🛡️ Hardware Protection** - Conservative reboot limits (maximum 1 per day)
 - **📊 Comprehensive Logging** - Local log files + Airtable integration for notifications
 - **✅ Success Notifications** - Know when issues are automatically resolved
+- **🔔 Startup Notifications** - Slack/Airtable alert whenever the system boots or monitor restarts
 - **🎬 Stream-Aware** - Never interrupts active Plex streams during speed tests
 - **🚀 Auto-Deployment** - Update from anywhere without SSH access
 
@@ -224,8 +225,10 @@ The monitor sends notifications for:
 - Network restart attempts
 - ✅ Network restoration (soft reset/DNS flush/hard reset)
 - Network speed test results
+- ❌ Speed test failures (zero upload, parse errors, server errors)
 
 **System Events:**
+- ✅ System startup (boot or monitor restart)
 - System reboot notifications
 - Reboot cycle status updates
 
@@ -264,6 +267,18 @@ NETWORK_TEST_ENDPOINTS=(
     "9.9.9.9"         # Quad9
 )
 ```
+
+### Speed Test Server
+
+The speed test is pinned to **server 13098 (Pilot Fiber, New York, NY)** for reliable upload measurements. This prevents the intermittent 0.00 Mbps upload readings caused by automatic server selection picking unreliable servers at 2am.
+
+To find alternative servers if needed:
+```bash
+speedtest-cli --list | head -20
+speedtest-cli --simple --server <ID>  # Test a specific server
+```
+
+To change the pinned server, update the `--server` flag in the `run_speed_test` function in `scripts/plex_monitor.sh`.
 
 ### Auto-Deploy Settings (in `config/com.user.plexmonitor.autodeploy.plist`)
 ```xml
@@ -370,11 +385,20 @@ sudo -u plex sudo -n /usr/sbin/networksetup -listallnetworkservices
 
 ### Speed Test Issues
 ```bash
-# Test speedtest-cli manually
+# Test speedtest-cli manually using the pinned server
+speedtest-cli --simple --server 13098
+
+# Test without pinned server to compare
 speedtest-cli --simple
+
+# List nearby servers to find alternatives
+speedtest-cli --list | head -20
 
 # Check speed test history
 cat /Users/plex/Library/Logs/speed_test_history.json
+
+# View speed test log
+tail -20 /Users/plex/Library/Logs/network_speeds.log
 
 # Verify installation
 which speedtest-cli
@@ -538,6 +562,7 @@ This version is designed to protect your Mac hardware:
 
 ## 🔄 Version History
 
+- **v3.3** (2026-03) - Pinned speed test to server 13098 (Pilot Fiber), added zero upload validation, added startup notifications to Airtable/Slack on boot or monitor restart
 - **v3.2** (2025-11) - Added auto-deployment system for remote updates
 - **v3.1** (2025-11) - Added success notifications for network recoveries
 - **v3.0** (2025-11) - Added daily network speed testing with intelligent retry logic
@@ -583,4 +608,4 @@ For issues:
 
 **Repository**: https://github.com/darrenchilton/plex_monitor  
 **Status**: Production-ready, actively maintained  
-**Last Updated**: November 2025
+**Last Updated**: March 2026
