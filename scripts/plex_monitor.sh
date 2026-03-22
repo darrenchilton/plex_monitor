@@ -599,14 +599,14 @@ run_speed_test() {
     
     # Run the speed test
     log_message "Running speedtest-cli (this may take 30 seconds)..."
-    local test_output=$(speedtest-cli --simple 2>&1)
+    local test_output=$(speedtest-cli --simple --server 13098 2>&1)
     local exit_code=$?
     
     # Check for 403 error and retry immediately (common cold-start issue)
     if [[ $exit_code -ne 0 ]] && echo "$test_output" | grep -q "403"; then
         log_message "Got 403 Forbidden error - retrying immediately after 5 second delay..."
         sleep 5
-        test_output=$(speedtest-cli --simple 2>&1)
+        test_output=$(speedtest-cli --simple --server 13098 2>&1)
         exit_code=$?
         
         if [[ $exit_code -eq 0 ]]; then
@@ -635,6 +635,14 @@ run_speed_test() {
             log_message "Speed test parsing failed. Output: $test_output"
             log_to_airtable "Speed Test Failed" "Failed to parse speedtest-cli output"
         fi
+        update_speed_test_history "failed"
+        return 1
+    fi
+
+    # Validate upload is not zero (indicates server-side failure)
+    if [[ "$upload" == "0.00" ]] || [[ "$upload" == "0" ]]; then
+        log_message "Speed test returned zero upload - treating as failed result"
+        log_to_airtable "Speed Test Failed" "Upload reported as 0.00 Mbps - likely server issue"
         update_speed_test_history "failed"
         return 1
     fi
