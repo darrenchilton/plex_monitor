@@ -717,13 +717,14 @@ handle_speed_test() {
 # ============================================================================
 
 log_message "Starting Secure Plex Monitor Script with Network Speed Testing"
-log_to_airtable "System Startup" "Plex monitor started - system has booted or monitor was restarted"
 
 # Initialize systems
 init_logging
 init_queue
 init_reboot_history
 init_speed_test_history
+
+log_to_airtable "System Startup" "Plex monitor started - system has booted or monitor was restarted"
 
 # Check if speedtest-cli is installed
 if ! command -v speedtest-cli &> /dev/null; then
