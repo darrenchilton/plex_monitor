@@ -20,7 +20,7 @@ REBOOT_CYCLE_PAUSE=86400
 DAILY_RESET_HOUR=0        # Reset attempts at midnight
 
 # Speed Test Configuration
-SPEED_TEST_HOUR=2         # Run speed test at 2:05am or later (skips 2:00-2:04 to avoid 403 errors)
+SPEED_TEST_HOUR=8         # Run speed test at 8am
 SPEED_TEST_TIMEZONE='America/New_York'  # EST
 SPEED_TEST_LOG="/Users/$PLEX_USER/Library/Logs/network_speeds.log"
 SPEED_TEST_HISTORY_FILE="/Users/$PLEX_USER/Library/Logs/speed_test_history.json"
@@ -467,7 +467,6 @@ update_speed_test_history() {
     attempts_today=$((attempts_today + 1))
     
     # Update last_test_date on any attempt to track the current day properly
-    # This ensures date-based resets work correctly
     last_test_date="$current_date"
     
     # Write updated info
@@ -484,13 +483,10 @@ should_run_speed_test() {
     
     # Strip leading zeros to avoid octal interpretation (08, 09 cause errors)
     current_hour=$((10#$current_hour))
-    current_minute=$((10#$current_minute))
     
     # Additional check: look for today's entry in the speed log file
-    # This is a more reliable check than the JSON history file
     if [[ -f "$SPEED_TEST_LOG" ]]; then
         if grep -q "^${current_date}.*Speed Test:.*Mbps" "$SPEED_TEST_LOG"; then
-            # Already have a successful test today - skip silently
             return 1
         fi
     fi
@@ -502,7 +498,6 @@ should_run_speed_test() {
     local last_attempt_time=$(echo "$speed_info" | grep -o '"last_attempt_time": *[0-9]*' | grep -o '[0-9]*$')
     
     # Reset attempts_today if it's a new day
-    # This prevents using stale attempt counts from previous days
     if [[ "$last_test_date" != "$current_date" ]]; then
         attempts_today=0
     fi
@@ -512,15 +507,7 @@ should_run_speed_test() {
     local has_failed_attempts=false
     
     if [[ "$current_hour" -eq "$SPEED_TEST_HOUR" ]]; then
-        # During test hour, only run if minute >= 5 for first attempt (skips 2:00-2:04 problematic window)
-        # OR if we already have failed attempts (retries can happen at any minute)
-        if [[ "$last_test_date" == "$current_date" ]] && [[ "$attempts_today" -gt 0 ]]; then
-            # This is a retry attempt - allow any minute
-            is_test_hour=true
-        elif [[ "$current_minute" -ge 5 ]]; then
-            # First attempt - only after 2:05am to avoid 403 errors
-            is_test_hour=true
-        fi
+        is_test_hour=true
     fi
     
     if [[ "$last_test_date" == "$current_date" ]] && [[ "$attempts_today" -gt 0 ]]; then
@@ -575,7 +562,6 @@ run_speed_test() {
         log_message "$message"
         log_to_airtable "Speed Test Skipped" "Network unavailable"
         
-        # Log to speed test file
         local timestamp=$(TZ="$SPEED_TEST_TIMEZONE" date '+%Y-%m-%d %H:%M:%S %Z')
         echo "$timestamp - $message" >> "$SPEED_TEST_LOG"
         
@@ -589,7 +575,6 @@ run_speed_test() {
         log_message "$message"
         log_to_airtable "Speed Test Skipped" "Plex update in progress"
         
-        # Log to speed test file
         local timestamp=$(TZ="$SPEED_TEST_TIMEZONE" date '+%Y-%m-%d %H:%M:%S %Z')
         echo "$timestamp - $message" >> "$SPEED_TEST_LOG"
         
@@ -599,18 +584,18 @@ run_speed_test() {
     
     # Run the speed test
     log_message "Running speedtest-cli (this may take 30 seconds)..."
-    local test_output=$(speedtest-cli --simple --server 13098 2>&1)
+    local test_output=$(speedtest-cli --simple 2>&1)
     local exit_code=$?
-    
-    # Check for 403 error and retry immediately (common cold-start issue)
-    if [[ $exit_code -ne 0 ]] && echo "$test_output" | grep -q "403"; then
-        log_message "Got 403 Forbidden error - retrying immediately after 5 second delay..."
+
+    # CHANGE 1: Catch both 403 errors and "No matched servers" errors
+    if [[ $exit_code -ne 0 ]] && echo "$test_output" | grep -qE "403|No matched servers"; then
+        log_message "Got server error - retrying immediately after 5 second delay..."
         sleep 5
-        test_output=$(speedtest-cli --simple --server 13098 2>&1)
+        test_output=$(speedtest-cli --simple 2>&1)
         exit_code=$?
         
         if [[ $exit_code -eq 0 ]]; then
-            log_message "Retry successful after 403 error"
+            log_message "Retry successful after server error"
         fi
     fi
     
@@ -628,27 +613,12 @@ run_speed_test() {
     
     # Validate that we got actual values
     if [[ -z "$download" ]] || [[ -z "$upload" ]] || [[ -z "$ping" ]]; then
-        if echo "$test_output" | grep -q "403"; then
-            log_message "Speed test parsing failed due to 403 error (already retried). Output: $test_output"
-            log_to_airtable "Speed Test Failed" "403 Forbidden error persisted after retry"
-        else
-            log_message "Speed test parsing failed. Output: $test_output"
-            log_to_airtable "Speed Test Failed" "Failed to parse speedtest-cli output"
-        fi
+        log_message "Speed test parsing failed. Output: $test_output"
+        # CHANGE 2: Log the actual error instead of a generic message
+        log_to_airtable "Speed Test Failed" "speedtest-cli error: $test_output"
         update_speed_test_history "failed"
         return 1
     fi
-
-    # Validate upload is not zero (indicates server-side failure)
-    if [[ "$upload" == "0.00" ]] || [[ "$upload" == "0" ]]; then
-        log_message "Speed test returned zero upload - treating as failed result"
-        log_to_airtable "Speed Test Failed" "Upload reported as 0.00 Mbps - likely server issue"
-        update_speed_test_history "failed"
-        return 1
-    fi
-    
-    # Get server info (optional, requires full output)
-    local server_info=$(speedtest-cli --list 2>&1 | head -5 | tail -1 || echo "Unknown")
     
     # Format the results
     local timestamp=$(TZ="$SPEED_TEST_TIMEZONE" date '+%Y-%m-%d %H:%M:%S %Z')
@@ -681,16 +651,8 @@ handle_speed_test() {
         return 0
     fi
     
-    local current_date=$(TZ="$SPEED_TEST_TIMEZONE" date '+%Y-%m-%d')
     local speed_info=$(get_speed_test_info)
-    local last_test_date=$(echo "$speed_info" | grep -o '"last_test_date": *"[^"]*"' | cut -d'"' -f4)
     local attempts_today=$(echo "$speed_info" | grep -o '"attempts_today": *[0-9]*' | grep -o '[0-9]*$')
-    
-    # Reset attempts_today if it's a new day (same logic as should_run_speed_test)
-    if [[ "$last_test_date" != "$current_date" ]]; then
-        attempts_today=0
-    fi
-    
     local attempt_num=$((attempts_today + 1))
     
     log_message "Speed test window active (Attempt $attempt_num of $MAX_SPEED_TEST_ATTEMPTS)"
@@ -701,7 +663,6 @@ handle_speed_test() {
     if [[ $result -eq 0 ]]; then
         log_message "Speed test completed successfully"
     elif [[ $result -eq 2 ]]; then
-        # Streams active - will retry
         log_message "Speed test delayed due to active streams, will retry in 1 hour"
         
         if [[ $attempt_num -eq $MAX_SPEED_TEST_ATTEMPTS ]]; then
@@ -713,7 +674,6 @@ handle_speed_test() {
             echo "$timestamp - $message" >> "$SPEED_TEST_LOG"
         fi
     else
-        # Other failure (network, Plex updating, etc.) - already logged
         if [[ $attempt_num -eq $MAX_SPEED_TEST_ATTEMPTS ]]; then
             log_message "Speed test attempts exhausted for today"
         fi
@@ -731,8 +691,6 @@ init_logging
 init_queue
 init_reboot_history
 init_speed_test_history
-
-log_to_airtable "System Startup" "Plex monitor started - system has booted or monitor was restarted"
 
 # Check if speedtest-cli is installed
 if ! command -v speedtest-cli &> /dev/null; then
@@ -812,5 +770,3 @@ while true; do
     log_message "Waiting for next check interval of $CHECK_INTERVAL seconds."
     sleep $CHECK_INTERVAL
 done
-# Auto-deploy test - 2025-11-10 08:20:21
-# testing auto deploy
