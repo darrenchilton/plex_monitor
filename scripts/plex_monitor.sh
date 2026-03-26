@@ -20,7 +20,7 @@ REBOOT_CYCLE_PAUSE=86400
 DAILY_RESET_HOUR=0        # Reset attempts at midnight
 
 # Speed Test Configuration
-SPEED_TEST_HOUR=8         # Run speed test at 8am
+SPEED_TEST_HOUR=2         # Run speed test at 2am
 SPEED_TEST_TIMEZONE='America/New_York'  # EST
 SPEED_TEST_LOG="/Users/$PLEX_USER/Library/Logs/network_speeds.log"
 SPEED_TEST_HISTORY_FILE="/Users/$PLEX_USER/Library/Logs/speed_test_history.json"
