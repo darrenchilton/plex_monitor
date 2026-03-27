@@ -467,8 +467,10 @@ update_speed_test_history() {
     attempts_today=$((attempts_today + 1))
     
     # Update last_test_date on any attempt to track the current day properly
-    last_test_date="$current_date"
-    
+    # Only update last_test_date on success so the reset logic works correctly
+    if [[ "$test_completed" == "success" ]]; then
+        last_test_date="$current_date"
+    fi    
     # Write updated info
     echo "{\"last_test_date\": \"${last_test_date}\", \"attempts_today\": ${attempts_today}, \"last_attempt_time\": ${current_time}}" > "$SPEED_TEST_HISTORY_FILE"
     
