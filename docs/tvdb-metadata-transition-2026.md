@@ -34,7 +34,9 @@ Official notice: https://forums.plex.tv/t/upcoming-change-thetvdb-metadata-suppo
 - Read-only access to Plex SQLite library database: **OK**.
 - Required tables `library_sections` and `metadata_items`: **present**.
 - Libraries: **2 total**, including **1 movies** and **1 TV**.
-- Next step: inspect only allowlisted schema fields and aggregate TV show/season/episode counts. Do not infer a series' effective ordering solely from library defaults; per-show settings take precedence.
+- Stage 2 schema inspection: `library_sections` has `agent`, `scanner`, `language`, `user_fields`; `metadata_items` has `metadata_type`, `library_section_id`, `guid`, `extra_data`, `user_fields` and ID/parent keys.
+- TV inventory: **1,024 shows**, **2,141 seasons**, **21,916 episodes**.
+- Next step: verify recognized library agent and prevalence of series metadata overrides using allowlisted aggregate output; do not print raw stored settings or tokens. Do not infer a series' effective ordering solely from library defaults; per-show settings take precedence.
 
 ## Reference behavior
 Plex announced that it will not alter current metadata on December 3. TheTVDB-specific orders will stop getting TheTVDB metadata updates; the legacy TheTVDB agent stops matching new shows/episodes. Plex advises TMDB ordering, with an exception for series that need alternate episode orders until TMDB episode groups become available.
