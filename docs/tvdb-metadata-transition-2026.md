@@ -103,3 +103,9 @@ New script: [`scripts/plex_tvdb_api_audit.py`](../scripts/plex_tvdb_api_audit.py
 - `AUDIT_STATUS=COMPLETE` means all sampled responses were classifiable, **not** that episode metadata is objectively correct. No automatic migration should follow.
 
 Known ordering values: `''` = Library default, `tmdbAiring` = TMDB Aired, `aired` = TheTVDB Aired, `dvd` = TheTVDB DVD, `absolute` = TheTVDB Absolute. See https://python-plexapi.readthedocs.io/en/latest/modules/video.html
+
+## API pilot execution — 2026-11-21 00:27 EST
+- Authenticated local read-only API script executed successfully on Mac mini.
+- Mode: PILOT; database shows: 1,024; five requested, five classified as **LIBRARY_DEFAULT**; zero TMDB explicit, zero TheTVDB Aired/DVD/Absolute, zero unverified and request failures.
+- `AUDIT_STATUS=PILOT_ONLY`; the remaining 1,019 shows have not been inspected by this API pilot.
+- Next step: `python3 scripts/plex_tvdb_api_audit.py --all` and review category totals plus unverified cases. No metadata changes authorized.
