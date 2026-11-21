@@ -85,3 +85,21 @@ Plex's authenticated metadata API can expose `showOrdering`, but it normally req
 References:
 - https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/
 - https://python-plexapi.readthedocs.io/en/latest/modules/video.html
+
+## Approved authenticated local API audit — 2026-11-21
+
+User explicitly authorized the Plex API audit after the prior credential-transmission restriction. Authorization is **limited to local, read-only GET requests** to `127.0.0.1:32400`; there is no approval to update metadata.
+
+New script: [`scripts/plex_tvdb_api_audit.py`](../scripts/plex_tvdb_api_audit.py).
+
+- Uses Python standard library only, independent of the active monitor.
+- Reads token privately from macOS Plex preferences if available, otherwise prompts with no terminal echo.
+- Sends token in an HTTP header **only to loopback** (never command-line argument or URL). No proxies or redirects; no HTTP traces or raw exceptions.
+- Reads TV show IDs from the existing local SQLite database in read-only mode and requests each show's metadata with `includePreferences=1`.
+- Extracts `showOrdering` only when present as an explicit show attribute or settings element; missing, conflicting or unknown values are `UNVERIFIED`, never assumed to inherit defaults.
+- Prints aggregate classifications and at most 30 numeric rating keys per TVDB/unknown category, no titles, raw API responses or secrets.
+- Start with `python3 scripts/plex_tvdb_api_audit.py --pilot` (five shows); review results before `--all` (all 1,024 shows).
+- Script itself is **not** part of auto-deployment or a scheduled job. It never writes to Plex.
+- `AUDIT_STATUS=COMPLETE` means all sampled responses were classifiable, **not** that episode metadata is objectively correct. No automatic migration should follow.
+
+Known ordering values: `''` = Library default, `tmdbAiring` = TMDB Aired, `aired` = TheTVDB Aired, `dvd` = TheTVDB DVD, `absolute` = TheTVDB Absolute. See https://python-plexapi.readthedocs.io/en/latest/modules/video.html
