@@ -45,3 +45,19 @@ Official notice: https://forums.plex.tv/t/upcoming-change-thetvdb-metadata-suppo
 
 ## Reference behavior
 Plex announced that it will not alter current metadata on December 3. TheTVDB-specific orders will stop getting TheTVDB metadata updates; the legacy TheTVDB agent stops matching new shows/episodes. Plex advises TMDB ordering, with an exception for series that need alternate episode orders until TMDB episode groups become available.
+
+
+## Reusable read-only inventory
+- Script: [`scripts/plex_tvdb_inventory.py`](../scripts/plex_tvdb_inventory.py).
+- Runs entirely against the local SQLite library database in read-only mode.
+- Only prints fixed, allowlisted category labels and integer totals; no raw metadata, secrets, titles, host identifiers, or paths.
+- Does **not** determine per-series ordering, and an absent text marker must never be interpreted as proof of no TVDB overrides.
+- To run from an already checked-out repository: `python3 scripts/plex_tvdb_inventory.py`.
+- Running it against the active Plex database may report a momentary count snapshot; it cannot guarantee a transactionally complete, season-wide audit.
+- Do not make any migration decisions from this script alone.
+
+## Manual show-level verification
+Plex Web > select TV show > Edit > Advanced > Episode ordering. Record only which of the defined values is selected, without copying authentication data. The valid selections are Library default, The Movie Database (Aired), TheTVDB (Aired), TheTVDB (DVD), and TheTVDB (Absolute). This check is useful to verify behavior but is not a substitute for an automated inventory of every show.
+
+## Automation boundary
+Plex's authenticated metadata API can expose `showOrdering`, but it normally requires a token. Current diagnostic constraints prohibit commands that could print or transmit credentials, including issuing token-bearing API calls. Accordingly the GitHub script intentionally does not call the API. A full 1,024-show classification remains blocked pending an explicitly approved secure method compatible with these constraints.
