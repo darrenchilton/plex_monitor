@@ -73,3 +73,15 @@ Plex's authenticated metadata API can expose `showOrdering`, but it normally req
 - The selection was **Library default**, which inherits the confirmed library-wide TMDB ordering.
 - This sample is reassuring but does not establish that all 1,024 series lack overrides.
 - No migration is approved or necessary based on currently verified evidence. Do not run a bulk refresh.
+
+## Security review — 2026-11-21
+- Verified against Plex's official authentication guidance that a claimed Plex server requires authenticated access for the library API; a local HTTP request is not exempt from authentication.
+- Verified against Python-PlexAPI documentation that individual TV shows expose `showOrdering` with values `None` (library default), `tmdbAiring` (TMDB), `aired` (TheTVDB Aired), `dvd` (TheTVDB DVD), and `absolute` (TheTVDB Absolute).
+- A complete automated show-level audit would ordinarily use authenticated requests to the Plex local API. Under the owner's current strict rule against commands capable of transmitting any credential, that request is **not authorized**, even if its output is sanitized or the server address is localhost.
+- The SQLite inventory is working and has no per-show order classifications. Do **not** treat zero marker matches as zero TheTVDB overrides.
+- A future fully automated audit requires a user-approved change to the credential-transmission constraint or a verified credential-free local interface that reliably exposes each show's effective setting. Neither is currently established.
+- Until then: no bulk migration, no metadata refresh, no misleading compliance claim. Existing library default is TMDB and a manually sampled series inherited it.
+
+References:
+- https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/
+- https://python-plexapi.readthedocs.io/en/latest/modules/video.html
