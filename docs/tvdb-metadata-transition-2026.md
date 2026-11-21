@@ -67,3 +67,9 @@ Plex Web > select TV show > Edit > Advanced > Episode ordering. Record only whic
 
 ## Automation boundary
 Plex's authenticated metadata API can expose `showOrdering`, but it normally requires a token. Current diagnostic constraints prohibit commands that could print or transmit credentials, including issuing token-bearing API calls. Accordingly the GitHub script intentionally does not call the API. A full 1,024-show classification remains blocked pending an explicitly approved secure method compatible with these constraints.
+
+## Manual sample — November 21, 2026
+- User checked one randomly selected TV show in Plex Web > Edit > Advanced > Episode ordering.
+- The selection was **Library default**, which inherits the confirmed library-wide TMDB ordering.
+- This sample is reassuring but does not establish that all 1,024 series lack overrides.
+- No migration is approved or necessary based on currently verified evidence. Do not run a bulk refresh.
