@@ -109,3 +109,14 @@ Known ordering values: `''` = Library default, `tmdbAiring` = TMDB Aired, `aired
 - Mode: PILOT; database shows: 1,024; five requested, five classified as **LIBRARY_DEFAULT**; zero TMDB explicit, zero TheTVDB Aired/DVD/Absolute, zero unverified and request failures.
 - `AUDIT_STATUS=PILOT_ONLY`; the remaining 1,019 shows have not been inspected by this API pilot.
 - Next step: `python3 scripts/plex_tvdb_api_audit.py --all` and review category totals plus unverified cases. No metadata changes authorized.
+
+## Final full API audit — 2026-11-21 00:28 EST
+- `MODE=FULL`, `AUDIT_STATUS=COMPLETE` on Plexs-Mac-mini.
+- `DB_SHOWS=1024`; `REQUESTED=1024`.
+- `LIBRARY_DEFAULT=1024`, `TMDB_AIRED=0`.
+- `TVDB_AIRED=0`, `TVDB_DVD=0`, `TVDB_ABSOLUTE=0`.
+- `UNVERIFIED=0`; `REQUEST_FAILURES=0`.
+- As the confirmed library default is **The Movie Database**, every TV show inherits TMDB ordering. No TheTVDB ordering overrides were reported by the API audit.
+- **Decision: no migration needed for the audited TV library.** Do not change ordering or trigger a bulk metadata refresh.
+- Audit is a point-in-time configuration snapshot, not a guarantee about future newly added libraries, future show overrides, or the correctness of all episode matches. Re-run `python3 scripts/plex_tvdb_api_audit.py --all` after major Plex library changes or if a matching issue emerges.
+- No Plex content, settings or service state was modified during this audit.
