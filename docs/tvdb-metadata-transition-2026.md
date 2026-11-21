@@ -47,6 +47,12 @@ Official notice: https://forums.plex.tv/t/upcoming-change-thetvdb-metadata-suppo
 Plex announced that it will not alter current metadata on December 3. TheTVDB-specific orders will stop getting TheTVDB metadata updates; the legacy TheTVDB agent stops matching new shows/episodes. Plex advises TMDB ordering, with an exception for series that need alternate episode orders until TMDB episode groups become available.
 
 
+### Validation — 2026-11-21 00:21 EST
+- Executed `python3 scripts/plex_tvdb_inventory.py` on Plexs-Mac-mini after fast-forwarding repository to `2370201`.
+- `AUDIT_STATUS=OK`; reported 2 libraries (1 movie, 1 TV), modern Plex Series agent, 1,024 shows, 2,141 seasons, 21,916 episodes.
+- All four exploratory `extra_data` ordering marker counts remained zero.
+- `SHOW_LEVEL_ORDERING_VERIFIED=NO`: no claims about per-show TheTVDB overrides can be made yet.
+
 ## Reusable read-only inventory
 - Script: [`scripts/plex_tvdb_inventory.py`](../scripts/plex_tvdb_inventory.py).
 - Runs entirely against the local SQLite library database in read-only mode.
