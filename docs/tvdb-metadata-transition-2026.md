@@ -38,7 +38,8 @@ Official notice: https://forums.plex.tv/t/upcoming-change-thetvdb-metadata-suppo
 - TV inventory: **1,024 shows**, **2,141 seasons**, **21,916 episodes**.
 - Stage 3: TV agent is **tv.plex.agents.series** (modern Plex TV Series); all **1,024** shows have nonempty `extra_data` and **0** shows have populated `user_fields`.
 - Neither observation identifies effective per-show episode ordering; do not equate empty `user_fields` with no overrides or assume populated `extra_data` is a TVDB indicator.
-- Next step: verify the TV library's effective **Episode ordering** in Plex Web (Manage Library > Edit > Advanced), then design an allowlisted per-show audit; do not expose raw `extra_data` or Plex credentials. Do not infer a series' effective ordering solely from library defaults; per-show settings take precedence.
+- Stage 4: user screenshot confirms TV library Advanced > Episode ordering is **The Movie Database**. No library-level change required.
+- Next step: inspect aggregate prevalence of recognized episode-order property markers in local `metadata_items.extra_data` without exposing raw strings. This is exploratory only; missing markers cannot prove no overrides. If inconclusive, use a vetted authenticated Plex API client, maintaining strict credential non-disclosure. Do not infer a series' effective ordering solely from library defaults; per-show settings take precedence.
 
 ## Reference behavior
 Plex announced that it will not alter current metadata on December 3. TheTVDB-specific orders will stop getting TheTVDB metadata updates; the legacy TheTVDB agent stops matching new shows/episodes. Plex advises TMDB ordering, with an exception for series that need alternate episode orders until TMDB episode groups become available.
